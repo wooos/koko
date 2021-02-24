@@ -29,6 +29,7 @@ type ConfirmService struct {
 }
 
 func (c *ConfirmService) WaitLoginConfirm(ctx context.Context) error {
+	// TODO: 通过登录复核的工单，检查复核
 	return c.waitConfirmFinish(ctx)
 }
 
@@ -63,6 +64,7 @@ func (c *ConfirmService) waitConfirmFinish(ctx context.Context) error {
 }
 
 func (c *ConfirmService) CheckIsNeedLoginConfirm() bool {
+	// todo: 获取登录复核的工单信息
 	userID := c.option.user.ID
 	systemUserID := c.option.systemUser.ID
 	targetID := c.option.targetID

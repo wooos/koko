@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/jumpserver/koko/pkg/i18n"
+	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/service"
 	"github.com/jumpserver/koko/pkg/utils"
@@ -17,6 +18,7 @@ func checkAdminConfirmLoginSession(srv *service.ConfirmService, userCon UserConn
 		return false
 	}
 	if err := srv.WaitLoginConfirm(userCon.Context()); err != nil {
+		logger.Error("Check admin Confirm login session failed: " + err.Error())
 		utils.IgnoreErrWriteString(userCon, getErrI18nMsg(err))
 		return false
 	}
