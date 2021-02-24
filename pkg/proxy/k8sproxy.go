@@ -200,6 +200,15 @@ func (p *K8sProxyServer) createDomainGateway(domainId string) (*domainGateway, e
 	return &dGateway, nil
 }
 
+func (p *K8sProxyServer) checkSessionConfirmLogin() bool {
+	srv := service.NewConfirmService(service.ConfirmWithUser(p.User),
+		service.ConfirmWithSystemUser(p.SystemUser),
+		service.ConfirmWithTargetType(model.AppType),
+		service.ConfirmWithTargetID(p.Cluster.Id))
+
+	return checkAdminConfirmLoginSession(&srv, p.UserConn)
+}
+
 // Proxy 代理
 func (p *K8sProxyServer) Proxy() {
 	if !p.preCheckRequisite() {
@@ -208,6 +217,9 @@ func (p *K8sProxyServer) Proxy() {
 	}
 	logger.Infof("Conn[%s] checking pre requisite success", p.UserConn.ID())
 	// 创建Session
+	if !p.checkSessionConfirmLogin() {
+		return
+	}
 	sw, ok := CreateCommonSwitch(p)
 	logger.Info("Create Common Switch", ok)
 	if !ok {

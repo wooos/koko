@@ -225,6 +225,15 @@ func (p *DBProxyServer) createDomainGateway(domainId string) (*domainGateway, er
 	return &dGateway, nil
 }
 
+func (p *DBProxyServer) checkSessionConfirmLogin() bool {
+	srv := service.NewConfirmService(service.ConfirmWithUser(p.User),
+		service.ConfirmWithSystemUser(p.SystemUser),
+		service.ConfirmWithTargetType(model.AppType),
+		service.ConfirmWithTargetID(p.Database.Id))
+
+	return checkAdminConfirmLoginSession(&srv, p.UserConn)
+}
+
 // Proxy 代理
 func (p *DBProxyServer) Proxy() {
 	if !p.preCheckRequisite() {
@@ -232,6 +241,10 @@ func (p *DBProxyServer) Proxy() {
 		return
 	}
 	logger.Infof("Conn[%s] checking pre requisite success", p.UserConn.ID())
+	if ok := p.checkSessionConfirmLogin(); !ok {
+		logger.Errorf("Conn[%s] Check session confirm failed", p.UserConn.ID())
+		return
+	}
 	// 创建Session
 	sw, ok := CreateCommonSwitch(p)
 	if !ok {

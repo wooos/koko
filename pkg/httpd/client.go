@@ -1,6 +1,7 @@
 package httpd
 
 import (
+	"context"
 	"io"
 	"sync"
 	"unicode/utf8"
@@ -83,4 +84,8 @@ func (c *Client) ID() string {
 
 func (c *Client) WriteData(p []byte) {
 	_, _ = c.UserWrite.Write(p)
+}
+
+func (c *Client) Context() context.Context {
+	return c.Conn.ctx.Request.Context()
 }
