@@ -201,12 +201,12 @@ func (p *K8sProxyServer) createDomainGateway(domainId string) (*domainGateway, e
 }
 
 func (p *K8sProxyServer) checkSessionConfirmLogin() bool {
-	srv := service.NewConfirmService(service.ConfirmWithUser(p.User),
+	srv := service.NewConnectionConfirm(service.ConfirmWithUser(p.User),
 		service.ConfirmWithSystemUser(p.SystemUser),
 		service.ConfirmWithTargetType(model.AppType),
 		service.ConfirmWithTargetID(p.Cluster.Id))
 
-	return checkAdminConfirmLoginSession(&srv, p.UserConn)
+	return checkAdminConfirmConnection(&srv, p.UserConn)
 }
 
 // Proxy 代理

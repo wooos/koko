@@ -2,12 +2,12 @@ package service
 
 import "time"
 
-func checkIfNeedLoginAssetConfirm(userID, assetID, systemUserID string) bool {
+func checkIfNeedAssetConnectionConfirm(userID, assetID, systemUserID string) bool {
 
 	return true
 }
 
-func checkIfNeedLoginAppConfirm(userID, assetID, systemUserID string) bool {
+func checkIfNeedAppConnectionConfirm(userID, assetID, systemUserID string) bool {
 
 	return false
 }
@@ -20,14 +20,14 @@ func checkLoginAssetConfirmFinish(userID, assetID, systemUserID string) (confirm
 	//return confirmResponse{}, nil
 }
 
-func checkLoginAPPConfirmFinish(userID, appID, systemUserID string) (confirmResponse, error) {
+func checkAPPConnectionConfirmFinish(userID, appID, systemUserID string) (confirmResponse, error) {
 
 	return confirmResponse{}, nil
 }
 
-func cancelAssetConfirmLogin(userID, assetID, systemUserID string) {
+func cancelAssetConnectionConfirm(userID, assetID, systemUserID string) {
 
 }
 
-func cancelAPPConfirmLogin(userID, appID, systemUserID string) {
+func cancelAPPConnectionConfirm(userID, appID, systemUserID string) {
 }

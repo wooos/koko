@@ -346,10 +346,10 @@ func (p *ProxyServer) getAssetCharset() string {
 }
 
 func (p *ProxyServer) checkSessionConfirmLogin() bool {
-	srv := service.NewConfirmService(service.ConfirmWithUser(p.User),
+	srv := service.NewConnectionConfirm(service.ConfirmWithUser(p.User),
 		service.ConfirmWithSystemUser(p.SystemUser),
 		service.ConfirmWithTargetID(p.Asset.ID))
-	return checkAdminConfirmLoginSession(&srv, p.UserConn)
+	return checkAdminConfirmConnection(&srv, p.UserConn)
 }
 
 // Proxy 代理

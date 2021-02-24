@@ -8,7 +8,7 @@ import (
 	"github.com/jumpserver/koko/pkg/model"
 )
 
-type confirmOption struct {
+type connectionConfirmOption struct {
 	user       *model.User
 	systemUser *model.SystemUser
 
@@ -16,24 +16,24 @@ type confirmOption struct {
 	targetID   string
 }
 
-func NewConfirmService(opts ...ConfirmOption) ConfirmService {
-	var option confirmOption
+func NewConnectionConfirm(opts ...ConfirmOption) ConnectionConfirm {
+	var option connectionConfirmOption
 	for _, setter := range opts {
 		setter(&option)
 	}
-	return ConfirmService{option: &option}
+	return ConnectionConfirm{option: &option}
 }
 
-type ConfirmService struct {
-	option *confirmOption
+type ConnectionConfirm struct {
+	option *connectionConfirmOption
 }
 
-func (c *ConfirmService) WaitLoginConfirm(ctx context.Context) error {
+func (c *ConnectionConfirm) WaitLoginConfirm(ctx context.Context) error {
 	// TODO: 通过登录复核的工单，检查复核
 	return c.waitConfirmFinish(ctx)
 }
 
-func (c *ConfirmService) waitConfirmFinish(ctx context.Context) error {
+func (c *ConnectionConfirm) waitConfirmFinish(ctx context.Context) error {
 	// 10s 请求一次
 	t := time.NewTicker(10 * time.Second)
 	defer t.Stop()
@@ -63,40 +63,40 @@ func (c *ConfirmService) waitConfirmFinish(ctx context.Context) error {
 	}
 }
 
-func (c *ConfirmService) CheckIsNeedLoginConfirm() bool {
+func (c *ConnectionConfirm) CheckIsNeedLoginConfirm() bool {
 	// todo: 获取登录复核的工单信息
 	userID := c.option.user.ID
 	systemUserID := c.option.systemUser.ID
 	targetID := c.option.targetID
 	switch c.option.targetType {
 	case model.AppType:
-		return checkIfNeedLoginAppConfirm(userID, targetID, systemUserID)
+		return checkIfNeedAppConnectionConfirm(userID, targetID, systemUserID)
 	default:
-		return checkIfNeedLoginAssetConfirm(userID, targetID, systemUserID)
+		return checkIfNeedAssetConnectionConfirm(userID, targetID, systemUserID)
 	}
 }
 
-func (c *ConfirmService) checkConfirmFinish() (confirmResponse, error) {
+func (c *ConnectionConfirm) checkConfirmFinish() (confirmResponse, error) {
 	userID := c.option.user.ID
 	systemUserID := c.option.systemUser.ID
 	targetID := c.option.targetID
 	switch c.option.targetType {
 	case model.AppType:
-		return checkLoginAPPConfirmFinish(userID, targetID, systemUserID)
+		return checkAPPConnectionConfirmFinish(userID, targetID, systemUserID)
 	default:
 		return checkLoginAssetConfirmFinish(userID, targetID, systemUserID)
 	}
 }
 
-func (c *ConfirmService) cancelConfirm() {
+func (c *ConnectionConfirm) cancelConfirm() {
 	userID := c.option.user.ID
 	systemUserID := c.option.systemUser.ID
 	targetID := c.option.targetID
 	switch c.option.targetType {
 	case model.AppType:
-		cancelAPPConfirmLogin(userID, targetID, systemUserID)
+		cancelAPPConnectionConfirm(userID, targetID, systemUserID)
 	default:
-		cancelAssetConfirmLogin(userID, targetID, systemUserID)
+		cancelAssetConnectionConfirm(userID, targetID, systemUserID)
 	}
 }
 
@@ -105,28 +105,28 @@ type confirmResponse struct {
 	Err string `json:"error,omitempty"`
 }
 
-type ConfirmOption func(*confirmOption)
+type ConfirmOption func(*connectionConfirmOption)
 
 func ConfirmWithUser(user *model.User) ConfirmOption {
-	return func(option *confirmOption) {
+	return func(option *connectionConfirmOption) {
 		option.user = user
 	}
 }
 
 func ConfirmWithSystemUser(sysUser *model.SystemUser) ConfirmOption {
-	return func(option *confirmOption) {
+	return func(option *connectionConfirmOption) {
 		option.systemUser = sysUser
 	}
 }
 
 func ConfirmWithTargetType(targetType string) ConfirmOption {
-	return func(option *confirmOption) {
+	return func(option *connectionConfirmOption) {
 		option.targetType = targetType
 	}
 }
 
 func ConfirmWithTargetID(targetID string) ConfirmOption {
-	return func(option *confirmOption) {
+	return func(option *connectionConfirmOption) {
 		option.targetID = targetID
 	}
 }
