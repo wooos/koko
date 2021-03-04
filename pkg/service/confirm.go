@@ -1,19 +1,33 @@
 package service
 
-import "time"
-
-func checkIfNeedAssetConnectionConfirm(userID, assetID, systemUserID string) bool {
-
-	return true
+func checkIfNeedAssetLoginConfirm(userID, assetID, systemUserID,
+	sysUsername string) (string, bool, error) {
+	params := map[string]string{
+		"user_id":         userID,
+		"asset_id":        assetID,
+		"system_user_id":  systemUserID,
+		"system_username": sysUsername,
+	}
+	var res struct {
+		Msg      bool   `json:"msg"`
+		Err      string `json:"error"`
+		TicketId string `json:"ticket_id"`
+	}
+	if _, err := authClient.Get(AssetLoginConfirmURL, &res, params); err != nil {
+		return "", false, err
+	}
+	return res.TicketId, !res.Msg, nil
 }
 
-func checkIfNeedAppConnectionConfirm(userID, assetID, systemUserID string) bool {
+func checkIfNeedAppConnectionConfirm(userID, assetID, systemUserID string) (bool, error) {
 
-	return false
+	return false, nil
 }
 
-func checkLoginAssetConfirmFinish(userID, assetID, systemUserID string) (confirmResponse, error) {
-	time.Sleep(10 * time.Second)
+func checkTicketFinish(ticketID string) (confirmResponse, error) {
+
+
+
 	return confirmResponse{
 		Msg: successMsg,
 	}, nil

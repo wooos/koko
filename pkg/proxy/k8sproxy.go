@@ -206,7 +206,7 @@ func (p *K8sProxyServer) checkSessionConfirmLogin() bool {
 		service.ConfirmWithTargetType(model.AppType),
 		service.ConfirmWithTargetID(p.Cluster.Id))
 
-	return checkAdminConfirmConnection(&srv, p.UserConn)
+	return validateConnectionLoginConfirm(&srv, p.UserConn)
 }
 
 // Proxy 代理

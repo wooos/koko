@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"io"
 	"strings"
 
@@ -11,14 +12,39 @@ import (
 	"github.com/jumpserver/koko/pkg/utils"
 )
 
-func checkAdminConfirmConnection(srv *service.ConnectionConfirm, userCon UserConnection) bool {
-	if !srv.CheckIsNeedLoginConfirm() {
-		return true
-	}
-	if !waitUserConfirm(userCon) {
+// 校验用户登录资产是否需要复核
+func validateConnectionLoginConfirm(srv *service.ConnectionConfirm, userCon UserConnection) bool {
+	ok, err := srv.CheckIsNeedLoginConfirm()
+	if err != nil {
+		msg := i18n.T("validate Login confirm err: Core Api failed")
+		utils.IgnoreErrWriteString(userCon, msg)
 		return false
 	}
-	if err := srv.WaitLoginConfirm(userCon.Context()); err != nil {
+	if !ok {
+		return true
+	}
+
+	ctx, cancelFunc := context.WithCancel(userCon.Context())
+	defer userCon.Close()
+	go func() {
+		cancelFunc()
+		term := utils.NewTerminal(userCon, "")
+		_, _ = term.Write([]byte("please Wait confirm from admin\r\n"))
+		for {
+			line, err := term.ReadLine()
+			if err != nil {
+				return
+			}
+			switch line {
+			case "exit", "q", "quit":
+				return
+			}
+			_, _ = term.Write([]byte("please Wait confirm from admin\r\n"))
+		}
+
+	}()
+	// todo 提示用户等待复核
+	if err = srv.WaitLoginConfirm(ctx); err != nil {
 		logger.Error("Check admin Confirm login session failed: " + err.Error())
 		utils.IgnoreErrWriteString(userCon, getErrI18nMsg(err))
 		return false

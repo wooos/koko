@@ -231,7 +231,7 @@ func (p *DBProxyServer) checkSessionConfirmLogin() bool {
 		service.ConfirmWithTargetType(model.AppType),
 		service.ConfirmWithTargetID(p.Database.Id))
 
-	return checkAdminConfirmConnection(&srv, p.UserConn)
+	return validateConnectionLoginConfirm(&srv, p.UserConn)
 }
 
 // Proxy 代理

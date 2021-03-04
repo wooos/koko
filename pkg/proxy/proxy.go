@@ -349,7 +349,8 @@ func (p *ProxyServer) checkSessionConfirmLogin() bool {
 	srv := service.NewConnectionConfirm(service.ConfirmWithUser(p.User),
 		service.ConfirmWithSystemUser(p.SystemUser),
 		service.ConfirmWithTargetID(p.Asset.ID))
-	return checkAdminConfirmConnection(&srv, p.UserConn)
+	return validateConnectionLoginConfirm(&srv, p.UserConn)
+
 }
 
 // Proxy 代理

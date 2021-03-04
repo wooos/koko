@@ -26,6 +26,8 @@ func NewConnectionConfirm(opts ...ConfirmOption) ConnectionConfirm {
 
 type ConnectionConfirm struct {
 	option *connectionConfirmOption
+
+	ticketID string // 获取到的当前工单 id
 }
 
 func (c *ConnectionConfirm) WaitLoginConfirm(ctx context.Context) error {
@@ -43,7 +45,7 @@ func (c *ConnectionConfirm) waitConfirmFinish(ctx context.Context) error {
 			c.cancelConfirm()
 			return model.ErrConfirmCancel
 		case <-t.C:
-			res, err := c.checkConfirmFinish()
+			res, err := c.checkTicketConfirmFinish()
 			if err != nil {
 				return model.ErrConfirmRequestFailure
 			}
@@ -63,29 +65,35 @@ func (c *ConnectionConfirm) waitConfirmFinish(ctx context.Context) error {
 	}
 }
 
-func (c *ConnectionConfirm) CheckIsNeedLoginConfirm() bool {
-	// todo: 获取登录复核的工单信息
+func (c *ConnectionConfirm) CheckIsNeedLoginConfirm() (ok bool, err error) {
+	// todo: 获取登录复核的工单ID
 	userID := c.option.user.ID
 	systemUserID := c.option.systemUser.ID
+	systemUsername := c.option.systemUser.Username
 	targetID := c.option.targetID
 	switch c.option.targetType {
 	case model.AppType:
 		return checkIfNeedAppConnectionConfirm(userID, targetID, systemUserID)
 	default:
-		return checkIfNeedAssetConnectionConfirm(userID, targetID, systemUserID)
+		c.ticketID, ok, err = checkIfNeedAssetLoginConfirm(userID, targetID,
+			systemUserID, systemUsername)
+
+		return
 	}
 }
 
-func (c *ConnectionConfirm) checkConfirmFinish() (confirmResponse, error) {
-	userID := c.option.user.ID
-	systemUserID := c.option.systemUser.ID
-	targetID := c.option.targetID
-	switch c.option.targetType {
-	case model.AppType:
-		return checkAPPConnectionConfirmFinish(userID, targetID, systemUserID)
-	default:
-		return checkLoginAssetConfirmFinish(userID, targetID, systemUserID)
-	}
+func (c *ConnectionConfirm) checkTicketConfirmFinish() (confirmResponse, error) {
+	//userID := c.option.user.ID
+	//systemUserID := c.option.systemUser.ID
+	//targetID := c.option.targetID
+	//switch c.option.targetType {
+	//case model.AppType:
+	//	return checkAPPConnectionConfirmFinish(userID, targetID, systemUserID)
+	//default:
+	//	return checkTicketFinish(userID, targetID, systemUserID)
+	//}
+
+	return checkTicketFinish(c.ticketID)
 }
 
 func (c *ConnectionConfirm) cancelConfirm() {
