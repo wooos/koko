@@ -69,4 +69,6 @@ const (
 
 const (
 	AssetLoginConfirmURL = "/api/v1/acls/asset/login-confirm/"
+
+	TicketStatusURL = "/api/v1/acls/ticket/status/"
 )

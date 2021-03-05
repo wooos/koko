@@ -31,7 +31,6 @@ type ConnectionConfirm struct {
 }
 
 func (c *ConnectionConfirm) WaitLoginConfirm(ctx context.Context) error {
-	// TODO: 通过登录复核的工单，检查复核
 	return c.waitConfirmFinish(ctx)
 }
 
@@ -45,28 +44,33 @@ func (c *ConnectionConfirm) waitConfirmFinish(ctx context.Context) error {
 			c.cancelConfirm()
 			return model.ErrConfirmCancel
 		case <-t.C:
-			res, err := c.checkTicketConfirmFinish()
+			res, err := c.getTicketStatus()
 			if err != nil {
 				return model.ErrConfirmRequestFailure
 			}
-			if res.Err != "" {
-				switch res.Err {
-				case ErrSessionLoginConfirmWait:
-					continue
-				case ErrSessionLoginConfirmRejected:
+			fmt.Println(res)
+			switch res.Status {
+			case TicketStatusOpen:
+				continue
+			case TicketStatusClosed:
+				switch res.Action {
+				case TicketActionApprove:
+					return nil
+				case TicketActionReject:
+					return model.ErrConfirmReject
+				case TicketActionClose:
 					return model.ErrConfirmReject
 				}
-				return fmt.Errorf("unkonw err: %s", res.Err)
+				return model.ErrConfirmReject
+			default:
+				return fmt.Errorf("unkonw status: %s", res.Status)
 			}
-			if res.Msg == successMsg {
-				return nil
-			}
+
 		}
 	}
 }
 
-func (c *ConnectionConfirm) CheckIsNeedLoginConfirm() (ok bool, err error) {
-	// todo: 获取登录复核的工单ID
+func (c *ConnectionConfirm) CheckIsNeedLoginConfirm() (bool, error) {
 	userID := c.option.user.ID
 	systemUserID := c.option.systemUser.ID
 	systemUsername := c.option.systemUser.Username
@@ -75,42 +79,36 @@ func (c *ConnectionConfirm) CheckIsNeedLoginConfirm() (ok bool, err error) {
 	case model.AppType:
 		return checkIfNeedAppConnectionConfirm(userID, targetID, systemUserID)
 	default:
-		c.ticketID, ok, err = checkIfNeedAssetLoginConfirm(userID, targetID,
+		res, err := checkIfNeedAssetLoginConfirm(userID, targetID,
 			systemUserID, systemUsername)
-
-		return
+		if err != nil {
+			return false, err
+		}
+		if !res.Msg {
+			c.ticketID = res.TicketID
+		}
+		return !res.Msg, nil
 	}
 }
 
-func (c *ConnectionConfirm) checkTicketConfirmFinish() (confirmResponse, error) {
-	//userID := c.option.user.ID
-	//systemUserID := c.option.systemUser.ID
-	//targetID := c.option.targetID
-	//switch c.option.targetType {
-	//case model.AppType:
-	//	return checkAPPConnectionConfirmFinish(userID, targetID, systemUserID)
-	//default:
-	//	return checkTicketFinish(userID, targetID, systemUserID)
-	//}
-
-	return checkTicketFinish(c.ticketID)
+func (c *ConnectionConfirm) getTicketStatus() (model.Ticket, error) {
+	return GetTicketStatus(c.ticketID)
 }
 
 func (c *ConnectionConfirm) cancelConfirm() {
 	userID := c.option.user.ID
-	systemUserID := c.option.systemUser.ID
-	targetID := c.option.targetID
 	switch c.option.targetType {
 	case model.AppType:
-		cancelAPPConnectionConfirm(userID, targetID, systemUserID)
+		closeTicketByUser(userID, c.ticketID)
 	default:
-		cancelAssetConnectionConfirm(userID, targetID, systemUserID)
+		closeTicketByUser(userID, c.ticketID)
 	}
 }
 
-type confirmResponse struct {
-	Msg string `json:"msg"`
-	Err string `json:"error,omitempty"`
+type checkAssetConfirmResponse struct {
+	Msg      bool   `json:"msg"`
+	Err      string `json:"error,omitempty"`
+	TicketID string `json:"ticket_id"`
 }
 
 type ConfirmOption func(*connectionConfirmOption)

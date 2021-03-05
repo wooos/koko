@@ -13,7 +13,7 @@ import (
 
 type Client struct {
 	WinChan   chan ssh.Window
-	UserRead  io.Reader
+	UserRead  io.ReadCloser
 	UserWrite io.WriteCloser
 	Conn      *UserWebsocket
 	pty       ssh.Pty
@@ -35,12 +35,12 @@ func (c *Client) RemoteAddr() string {
 }
 
 func (c *Client) Read(p []byte) (n int, err error) {
+	c.Lock()
+	defer c.Unlock()
 	return c.UserRead.Read(p)
 }
 
 func (c *Client) Write(p []byte) (n int, err error) {
-	c.Lock()
-	defer c.Unlock()
 	n = len(p)
 	buf := make([]byte, len(c.remainBuf)+n)
 	copy(buf, c.remainBuf)
@@ -68,7 +68,16 @@ func (c *Client) Pty() ssh.Pty {
 }
 
 func (c *Client) Close() (err error) {
-	return c.UserWrite.Close()
+	_ = c.UserRead.Close()
+	_ = c.UserWrite.Close()
+	c.initPipe()
+	return err
+}
+
+func (c *Client) initPipe() {
+	c.Lock()
+	defer c.Unlock()
+	c.UserRead, c.UserWrite = io.Pipe()
 }
 
 func (c *Client) SetWinSize(size ssh.Window) {

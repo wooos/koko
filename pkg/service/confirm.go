@@ -1,22 +1,21 @@
 package service
 
+import (
+	"github.com/jumpserver/koko/pkg/logger"
+	"github.com/jumpserver/koko/pkg/model"
+)
+
 func checkIfNeedAssetLoginConfirm(userID, assetID, systemUserID,
-	sysUsername string) (string, bool, error) {
+	sysUsername string) (res checkAssetConfirmResponse, err error) {
 	params := map[string]string{
 		"user_id":         userID,
 		"asset_id":        assetID,
 		"system_user_id":  systemUserID,
 		"system_username": sysUsername,
 	}
-	var res struct {
-		Msg      bool   `json:"msg"`
-		Err      string `json:"error"`
-		TicketId string `json:"ticket_id"`
-	}
-	if _, err := authClient.Get(AssetLoginConfirmURL, &res, params); err != nil {
-		return "", false, err
-	}
-	return res.TicketId, !res.Msg, nil
+
+	_, err = authClient.Get(AssetLoginConfirmURL, &res, params)
+	return
 }
 
 func checkIfNeedAppConnectionConfirm(userID, assetID, systemUserID string) (bool, error) {
@@ -24,24 +23,24 @@ func checkIfNeedAppConnectionConfirm(userID, assetID, systemUserID string) (bool
 	return false, nil
 }
 
-func checkTicketFinish(ticketID string) (confirmResponse, error) {
-
-
-
-	return confirmResponse{
-		Msg: successMsg,
-	}, nil
-	//return confirmResponse{}, nil
+func GetTicketStatus(ticketID string) (res model.Ticket, err error) {
+	params := map[string]string{
+		"ticket_id": ticketID,
+	}
+	_, err = authClient.Get(TicketStatusURL, &res, params)
+	if err != nil {
+		logger.Errorf("Get Ticket err: %s", err.Error())
+	}
+	return
 }
 
-func checkAPPConnectionConfirmFinish(userID, appID, systemUserID string) (confirmResponse, error) {
-
-	return confirmResponse{}, nil
-}
-
-func cancelAssetConnectionConfirm(userID, assetID, systemUserID string) {
-
-}
-
-func cancelAPPConnectionConfirm(userID, appID, systemUserID string) {
+func closeTicketByUser(userID, ticketID string) {
+	params := map[string]string{
+		"user_id":   userID,
+		"ticket_id": ticketID,
+	}
+	_, err := authClient.Delete(AssetLoginConfirmURL, nil, params)
+	if err != nil {
+		logger.Errorf("Close Ticket err: %s", err.Error())
+	}
 }

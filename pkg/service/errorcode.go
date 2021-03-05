@@ -9,8 +9,13 @@ const (
 )
 
 const (
-	ErrSessionLoginConfirmWait =  "session_login_confirm_wait"
-	ErrSessionLoginConfirmRejected = "session_login_confirm_rejected"
+	TicketStatusOpen   = "open"
+	TicketStatusClosed = "closed"
 )
 
-const successMsg = "ok"
+const (
+	TicketActionOpen    = "open"
+	TicketActionClose   = "close"
+	TicketActionApprove = "approve"
+	TicketActionReject  = "reject"
+)

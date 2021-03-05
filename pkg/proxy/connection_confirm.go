@@ -2,8 +2,6 @@ package proxy
 
 import (
 	"context"
-	"io"
-	"strings"
 
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
@@ -27,44 +25,29 @@ func validateConnectionLoginConfirm(srv *service.ConnectionConfirm, userCon User
 	ctx, cancelFunc := context.WithCancel(userCon.Context())
 	defer userCon.Close()
 	go func() {
-		cancelFunc()
-		term := utils.NewTerminal(userCon, "")
-		_, _ = term.Write([]byte("please Wait confirm from admin\r\n"))
+		defer cancelFunc()
+		term := utils.NewTerminal(userCon, ">: ")
+		msg := "Wait for your admin to confirm login [Y/n]?\r\n"
+		_, _ = term.Write([]byte(msg))
 		for {
 			line, err := term.ReadLine()
 			if err != nil {
 				return
 			}
 			switch line {
-			case "exit", "q", "quit":
+			case "exit", "quit", "q", "n":
 				return
 			}
-			_, _ = term.Write([]byte("please Wait confirm from admin\r\n"))
+			_, _ = term.Write([]byte(msg))
 		}
 
 	}()
-	// todo 提示用户等待复核
 	if err = srv.WaitLoginConfirm(ctx); err != nil {
 		logger.Error("Check admin Confirm login session failed: " + err.Error())
 		utils.IgnoreErrWriteString(userCon, getErrI18nMsg(err))
 		return false
 	}
 	return true
-}
-
-func waitUserConfirm(rw io.ReadWriteCloser) bool {
-	opt := i18n.T("Do you wait for your admin to confirm login [Y/n]? :")
-	term := utils.NewTerminal(rw, opt)
-	line, err := term.ReadLine()
-	if err != nil {
-		return false
-	}
-	switch strings.ToLower(line) {
-	case "yes", "y":
-		return true
-	default:
-		return false
-	}
 }
 
 func getErrI18nMsg(err error) string {
