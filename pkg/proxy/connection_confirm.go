@@ -2,6 +2,9 @@ package proxy
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
@@ -24,27 +27,43 @@ func validateConnectionLoginConfirm(srv *service.ConnectionConfirm, userCon User
 
 	ctx, cancelFunc := context.WithCancel(userCon.Context())
 	defer userCon.Close()
+	defer cancelFunc()
 	go func() {
 		defer cancelFunc()
-		term := utils.NewTerminal(userCon, ">: ")
-		msg := "Wait for your admin to confirm login [Y/n]?\r\n"
-		_, _ = term.Write([]byte(msg))
+		term := utils.NewTerminal(userCon, "")
+		defer userCon.Write([]byte("\r\n"))
 		for {
 			line, err := term.ReadLine()
 			if err != nil {
+				logger.Errorf("Wait confirm err: %s", err.Error())
 				return
 			}
 			switch line {
-			case "exit", "quit", "q", "n":
+			case "quit", "q":
 				return
 			}
-			_, _ = term.Write([]byte(msg))
 		}
-
 	}()
+	go func() {
+		msg := i18n.T("Waiting for your admin to confirm, enter q to exit. ")
+		delay := 0
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				delayS := fmt.Sprintf("%ds", delay)
+				data := strings.Repeat("\x08", len(delayS)+len(msg)) + msg + delayS
+				utils.IgnoreErrWriteString(userCon, data)
+				time.Sleep(time.Second)
+				delay += 1
+			}
+		}
+	}()
+
 	if err = srv.WaitLoginConfirm(ctx); err != nil {
-		logger.Error("Check admin Confirm login session failed: " + err.Error())
-		utils.IgnoreErrWriteString(userCon, getErrI18nMsg(err))
+		logger.Error("Check confirm login session failed: " + err.Error())
+		utils.IgnoreErrWriteString(userCon, getErrI18nMsg(err)+"\r\n")
 		return false
 	}
 	return true
@@ -53,6 +72,8 @@ func validateConnectionLoginConfirm(srv *service.ConnectionConfirm, userCon User
 func getErrI18nMsg(err error) string {
 	var msg string
 	switch err {
+	case model.ErrConfirmCancel:
+		return i18n.T("Cancel login confirm")
 	case model.ErrConfirmReject:
 		msg = i18n.T("Reject login asset")
 	case model.ErrConfirmRequestFailure:
